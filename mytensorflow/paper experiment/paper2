@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul  7 09:51:18 2017
+
+@author: zhouying
+"""
+#from __future__ import division, print_function, absolute_import
+
+import tensorflow as tf
+import numpy as np
+#import matplotlib.pyplot as plt
+from sklearn import preprocessing
+import vae
+import mlp
+#%matplotlib inline
+from SDAE import mysdae
+import scipy.io
+from myutil import crossvalidation,classify,Smote,app
+from vae3 import mnist_vae
+from mlp import mlp
+from tsne import tsne
+from gan2 import gan
+from sklearn import metrics
+
+# Import MNIST data
+#from tensorflow.examples.tutorials.mnist import input_data
+#mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+#ionosphere yeast glass
+#data=np.loadtxt('./MNIST_data/ionosphere.txt',dtype='float32')
+mydata = scipy.io.loadmat('/home/zhouying/mytensorflow/MNIST_data/UCI/ionosphere.mat')
+data = np.array(mydata['data'])
+label = np.transpose(mydata['label'])
+#label = np.array(mydata['label'])
+label = label[0]
+# Parameters
+learning_rate = 0.001
+training_epochs = 20
+batch_size = 20
+
+divide_rate = 0.1
+keep_rate = 0.75
+# Network Parameters
+#n_hidden_1 = int(data.shape[1]*0.7)+1 # 1st layer num features
+#n_hidden_2 = 128 # 2nd layer num features
+n_input = data.shape[1] # MNIST data input (img shape: 28*28)
+hidden_size = [25]
+hidden_size_positive = [20]
+scale = 0.1
+# tf Graph input (only pictures)
+min_max_scaler = preprocessing.MinMaxScaler()
+data = min_max_scaler.fit_transform(data)
+
+pos = 1
+neg = 0
+
+my_model_F1 = []
+my_model_auc = []
+my_F1 = []
+my_auc = []
+my_model_gene = []
+my_model_gen_auc = []
+my_model_gen_f1 = []
+my_model_gen_gmean = []
+F1 = []
+
+auc = []
+model_gene = []
+
+from sklearn.model_selection import StratifiedKFold
+skf = StratifiedKFold(n_splits=int(1/divide_rate))
+for train_index,test_index in skf.split(data,label):
+    train = data[train_index,:]
+    test = data[test_index,:]
+    train_label = label[train_index]
+    test_label = label[test_index]
+    negative = train[train_label==neg]
+    positive = train[train_label==pos]
+
+    
+#     preprocessing ,normalize it into (0,1)
+    
+    # end of preprocessing
+    
+    #divide into negative data and positive ones
+    
+
+    x_train_negative = negative
+    x_train_positive = positive
+    #end of divide
+    x_train_orginal = x_train_positive
+    
+#    genetate the x_train_positive to be balance dataset
+    y_train_positive = np.ones(x_train_positive.shape[0])
+    
+#    gene = vae.myvae(x_train_positive,y_train_positive,gene_size)
+    gene_size = x_train_negative.shape[0]-x_train_positive.shape[0]
+#    gene = gan(data,gene_size)
+    gene = mnist_vae(x_train_positive,gene_size)
+   
+#    gene = np.reshape(gene,[len(gene),x_train_positive.shape[1]])
+#    gene = min_max_scaler.transform(gene)
+#    s =Smote(x_train_positive,N=100)
+#    gene = s.over_sampling()
+#    gene = min_max_scaler.fit_transform(gene)
+    x_train_positive = np.row_stack((x_train_positive,gene))
+    # end of generation
+#in the process, we didn't change the original dataset such as train and test except preprocessing   
+    x_train = data[train_index,:]
+    y_train = label[train_index]
+    x_test = data[test_index,:]
+    y_test = label[test_index]
+#    runfile('/home/zhouying/mytensorflow/paper experiment/visiluse', wdir='/home/zhouying/mytensorflow/paper experiment')
+
+###################################
+##compute F1 score
+#    
+#    my_model_F1.append(metrics.f1_score(y_test, y_pre))
+#    my_model_auc.append(metrics.f1_score(y_train, tr_pre_2))
+#    my_F1.append(metrics.f1_score(y_train,tr_pre))
+##    my_auc.append(metrics.roc_auc_score(y_train, tr_pre))
+#    my_model_gene.append(metrics.f1_score(y_test, y_newpre))
+##    my_model_gen_auc.append(metrics.roc_auc_score(y_test, y_newpre))
+#    my_model_gen_f1.append(metrics.f1_score(y_test, y_newnewpre))
+##    my_cc.append(metrics.confusion_matrix(y_test, y_pre))
+##    my_model_gmean.append(metrics.gmean_score(y_test, y_pre))
+#    a = metrics.confusion_matrix(y_test, y_newpre)
+#    b = (a[0][0]/(a[0][0]+a[0][1]))*(a[1][1]/(a[1][0]+a[1][1]))
+#    g_mean = pow(b,0.5)
+#    my_model_gen_gmean.append(g_mean)
+#    print('my model test F1:',metrics.f1_score(y_test, y_pre))
+#    print('my model train f1:',metrics.f1_score(y_train, tr_pre))
+#    print('my model generation test F1:',metrics.f1_score(y_test, y_newpre))
+##    print('my model generation g-mean:',g_mean)
+##    print('my model generation auc:',metrics.roc_auc_score(y_test, y_newpre))
+#    print('my model:',metrics.confusion_matrix(y_test, y_newpre))
+#    
+##    
+
+
+####################################
+#compute the normal classification's F1 score
+
+    from sklearn.naive_bayes import GaussianNB
+    gnb = GaussianNB()
+    y_pred = gnb.fit(train, train_label).predict(x_test)
+    F1.append(metrics.f1_score(y_test, y_pred))
+#    auc.append(metrics.roc_auc_score(y_test, y_pred))
+    
+#    cc.append(metrics.roc_auc_score(y_test, y_pred))
+    print('NB test F1:',metrics.f1_score(y_test, y_pred))
+#    print('roc:',metrics.roc_auc_score(y_test, y_pred))
+    
+#    print('GBN:',metrics.confusion_matrix(y_test, y_pred))
+    
+
+#predict the generated samples
+    gnb = GaussianNB()
+    train,train_label = app(positive,negative,gene)    
+    y_predne = gnb.fit(train,train_label).predict(x_test)
+    print('NB generation test F1:',metrics.f1_score(y_test, y_predne))
+    model_gene.append(metrics.f1_score(y_test, y_predne))
+
+    
+    
+#    print('generation F1:',metrics.f1_score(y_test, y_predne))
+#    print('generation roc:',metrics.roc_auc_score(y_test, y_predne))
+#my_model_F1 = np.array(my_model_F1)
+#my_model_auc = np.array(my_model_auc)
+#F1 = np.array(F1)
+#auc = np.array(auc)
+print('##########################zhouying###################################')
+print('my_model_mean_test_F1',np.mean(my_model_F1))
+print('my_model_mean_train_f1',np.mean(my_F1))
+print('my_mean_F1',np.mean(my_model_auc))
+#print('my_mean_auc',np.mean(my_auc))
+#print('my_mean_cc',np.mean(my_cc))
+print('my_mean_generation_F1',np.mean(my_model_gene))
+#print('my_mean_generation_auc',np.mean(my_model_gen_auc))
+print('my_mean_generation_gmean',np.mean(my_model_gen_gmean))
+print('my_mean_generation_bagging_f1',np.mean(my_model_gen_f1))
+print('GNB_mean_F1',np.mean(F1))
+print('GNB_mean_auc',np.mean(auc))
+print('GNB_mean_generation_F1',np.mean(model_gene))
+#print('mean_cc',np.mean(cc))

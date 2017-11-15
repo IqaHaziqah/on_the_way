@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 28 16:21:52 2017
+
+@author: zhouying
+"""
+
+def mygan2(data):
+    import numpy as np
+    import tensorflow as tf
+    
+    learning_rate = 0.01
+    training_epochs = 20
+    batch_size = 10
+    
+    n_hidden_1 = int(data.shape[1]*0.7)+1 # 1st layer num features
+    n_hidden_2 = int(n_hidden_1/2) # 2nd layer num features
+    n_input = data.shape[1]-1
+    X = tf.placeholder("float", [None, n_input])
+    
+    weights = {
+            'gen_h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
+            'gen_h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
+            #    'decoder_h1': tf.Variable(tf.random_normal([n_hidden_2, n_hidden_1])),
+            'dis_h1': tf.Variable(tf.random_normal([n_hidden_2, n_hidden_1])),
+            'dis_h2': tf.Variable(tf.random_normal([n_hidden_1, n_input])),
+            }
+    biases = {
+            'gen_b1': tf.Variable(tf.random_normal([n_hidden_1])),
+            'gen_b2': tf.Variable(tf.random_normal([n_hidden_2])),
+            'dis_b1': tf.Variable(tf.random_normal([n_hidden_1])),
+#        'decoder_b1': tf.Variable(tf.random_normal([n_input])),
+            'dis_b2': tf.Variable(tf.random_normal([n_input])),
+            }
+    def generator(x):
+    # Encoder Hidden layer with sigmoid activation #1
+        layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['gen_h1']),
+                                       biases['gen_b1']))
+    # Decoder Hidden layer with sigmoid activation #2
+        layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['gen_h2']),
+                                   biases['gen_b2']))
+        return layer_2
+    
+    def discriminator(x):
+    # Encoder Hidden layer with sigmoid activation #1
+        layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['dis_h1']),
+                                   biases['dis_b1']))
+        # Decoder Hidden layer with sigmoid activation #2
+        layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['dis_h2']),
+                                   biases['dis_b2']))
+        return layer_2

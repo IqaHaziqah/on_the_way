@@ -1,0 +1,40 @@
+import tensorflow as tf
+a = tf.placeholder("float")
+b = tf.placeholder("float")
+y = tf.mul(a,b)
+sess = tf.Session()
+print sess.run(y,feed_dict={a:3,b:3})
+
+#define the graph
+hello_op=tf.constant('hello, tensorflow!')
+aa = tf.constant(10)
+bb = tf.constant(32)
+compute_op = tf.add(aa,bb)
+
+print sess.run(hello_op)
+print sess.run(compute_op)
+
+
+import numpy as np
+#prepare train data
+train_x = np.linspace(-1,1,100)
+train_y = 2*train_x+np.random.rand(*train_x.shape)*0.33+10
+
+#define the model
+X = tf.placeholder("float")
+Y = tf.placeholder("float")
+w = tf.Variable(0.0,name="Weight")
+b = tf.Variable(0.0,name="bias")
+loss = tf.square(Y-tf.mul(X,w)-b)
+train_op = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
+
+#create session to run
+with tf.Session() as sess:
+    sess.run(tf.initialize_all_variables())
+    epoch=1
+    for i in range(10):
+        for (x,y) in zip(train_x,train_y):
+            _,w_value,b_value=sess.run([train_op,w,b],feed_dict={X:x,Y:y})
+            print("epoch:{},w:{},b:{}".format(epoch,w_value,b_value))
+            epoch += 1
+tf.scalar_summary('loss',loss)

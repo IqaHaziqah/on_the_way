@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jun 18 10:27:19 2017
+
+@author: zhouying
+"""
+
+
+
+#from __future__ import division, print_function, absolute_import
+
+import tensorflow as tf
+tf.GraphKeys.VARIABLES = tf.GraphKeys.GLOBAL_VARIABLES
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import cross_validation,metrics
+#%matplotlib inline
+
+# Import MNIST data
+#from tensorflow.examples.tutorials.mnist import input_data
+#mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+data=np.loadtxt('./MNIST_data/ionosphere.txt',dtype='float32')
+
+# Parameters
+learning_rate = 0.01
+training_epochs = 20
+batch_size = 10
+
+n_samples = data.shape[0]
+n_class = 2
+n_hidden =25
+divide_rate = 0.2
+# Network Parameters
+n_hidden_1 = 8 # 1st layer num features
+n_hidden_2 = 128 # 2nd layer num features
+n_input = 34 # MNIST data input (img shape: 28*28)
+scale = 0.1
+# tf Graph input (only pictures)
+
+F1 = []
+auc = []
+
+
+# Initializing the variables
+def onehot(labels):
+    ''' one-hot 编码 '''
+    n_sample = len(labels)
+    n_class = max(labels) + 1
+    onehot_labels = np.zeros((n_sample, n_class))
+    onehot_labels[np.arange(n_sample), labels] = 1
+
+    return onehot_labels
+
+from sklearn.cross_validation import StratifiedKFold
+skf = StratifiedKFold(data[:,n_input],n_folds=int(1/divide_rate))
+for train_1,test_1 in skf:
+    train = data[train_1,:]
+    test = data[test_1,:]
+    y_train = train[:,n_input]
+    x_test = test[:,0:n_input]
+    y_test = test[:,n_input]
+    #change the dtype of labels
+    y_train =y_train.astype(np.int32)
+    y_test =y_test.astype(np.int32)
+    y_train = onehot(y_train)
+    y_test = onehot(y_test)
+    sess = tf.InteractiveSession()
+    
+    x = tf.placeholder(tf.float32,[None,n_input])#input images
+    W1 = tf.Variable(tf.zeros([n_input,n_hidden]))
+    W2 = tf.Variable(tf.zeros([n_hidden,n_class]))
+    b1 = tf.Variable(tf.zeros([n_hidden]))
+    b2 = tf.Variable(tf.zeros([n_class]))
+    hidden = tf.nn.sigmoid(tf.matmul(x,W1)+b1)
+    y = tf.nn.softmax(tf.matmul(hidden,W2)+b2)
+    y_ = tf.placeholder(tf.float32,[None,n_class])#input labels
+    cross_entropy =tf.reduce_mean(tf.pow(y_ - y, 2))
+    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy)
+#    test = tf.nn.softmax(tf.matmul(x,W)+b)
+    init = tf.global_variables_initializer()
+    total_batch = int(train.shape[0]/batch_size)
+    sess.run(init)
+    for epoch in range(training_epochs):
+        # Loop over all batches
+            for i in range(total_batch):
+                batch_xs = train[i*batch_size:(i+1)*batch_size,0:n_input]
+                batch_ys = y_train[i*batch_size:(i+1)*batch_size,:]
+            # Run optimization op (backprop) and cost op (to get loss value)
+                sess.run(optimizer,feed_dict={x: batch_xs,y_:batch_ys})
+#saver = tf.train.Saver()
+    
+#    correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(y_,1))
+#    accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+#    print(accuracy.eval(feed_dict={x: x_test,y_: y_test}))
+    my = sess.run(y,feed_dict={x: x_test,y_: y_test})
+#    my = tf.argmax(my,1)
+#    my= np.array(my)
+#    my = my.T
+#    my = np.reshape(my,my.shape[0]*my.shape[1],1)
+#    y = np.reshape(y,([y.shape[1],y.shape[2]]))
+#    y = tf.argmax(y,1)
+    y_test_1 = test[:,n_input]
+    F1.append(metrics.f1_score(y_test_1, np.argmax(my,1)))
+    auc.append(metrics.roc_auc_score(y_test_1, np.argmax(my,1)))
+    
+print('F1:',np.mean(F1))
+print('roc:',np.mean(auc))

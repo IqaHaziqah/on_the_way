@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Oct 16 15:18:40 2017
+
+@author: zhouying
+"""
+
+def SLA(source,y_s,target,y_t,lamdas,T):
+    from myutil import xavier_init,Dataset
+    import tensorflow as tf
+    import numpy as np
+    
+#    vst = tf.ones(source.shape[0])
+    input_dim = target.shape[1]
+    hidden1 = 30
+    hidden2 = 8
+    learning_rate = 0.01
+    batch_size =10
+    epoch = 150
+    
+    vs = np.ones(source.shape[0])
+    print(vs)
+    print(vs.shape)
+    
+    x_source = tf.placeholder(tf.float32,shape=[None,input_dim])
+    y_source = tf.placeholder(tf.float32,shape=[1,None])
+#    vst = tf.placeholder(tf.float32,shape=[None,1])
+    x_target = tf.placeholder(tf.float32,shape=[None,input_dim])
+    y_target = tf.placeholder(tf.float32,shape=[1,None])  
+    
+    layer1_W = tf.Variable(xavier_init([input_dim,hidden1]))
+    layer1_b = tf.Variable(tf.zeros(hidden1))
+    layer1_zs = tf.nn.relu(tf.matmul(x_source,layer1_W)+layer1_b)
+    layer1_zt = tf.nn.relu(tf.matmul(x_target,layer1_W)+layer1_b)
+    
+    tf.summary.histogram('layer1_W',layer1_W)
+    tf.summary.histogram('layer1_b',layer1_b)
+    tf.summary.histogram('layer1_zs',layer1_zs)
+    tf.summary.histogram('layer1_zt',layer1_zt)
+    
+    
+    layer2_W = tf.Variable(xavier_init([hidden1,hidden2]))
+    layer2_b = tf.Variable(tf.zeros(hidden2))
+    layer2_zs = tf.nn.relu(tf.matmul(layer1_zs,layer2_W)+layer2_b)
+    layer2_zt = tf.nn.relu(tf.matmul(layer1_zt,layer2_W)+layer2_b)
+    
+    tf.summary.histogram('layer2_W',layer2_W)
+    tf.summary.histogram('layer2_b',layer2_b)
+    tf.summary.histogram('layer2_zs',layer2_zs)
+    tf.summary.histogram('layer2_zt',layer2_zt)
+    
+    
+    layer2_rW = tf.Variable(xavier_init([hidden2,hidden1]))
+    layer2_rb = tf.Variable(tf.zeros(hidden1))
+    layer2_rzs = tf.nn.relu(tf.matmul(layer2_zs,layer2_rW)+layer2_rb)
+    layer2_rzt = tf.nn.relu(tf.matmul(layer2_zt,layer2_rW)+layer2_rb)
+    
+    tf.summary.histogram('layer2_rW',layer2_rW)
+    tf.summary.histogram('layer2_rb',layer2_rb)
+    tf.summary.histogram('layer2_rzs',layer2_rzs)
+    tf.summary.histogram('layer2_rzt',layer2_rzt)
+    
+    
+    layer1_rW = tf.Variable(xavier_init([hidden1,input_dim]))
+    layer1_rb = tf.Variable(tf.zeros(input_dim))
+    recon_outputs = (tf.matmul(layer2_rzs,layer1_rW)+layer1_rb)
+    recon_outputt = (tf.matmul(layer2_rzt,layer1_rW)+layer1_rb)
+    
+    tf.summary.histogram('layer1_rW',layer1_rW)
+    tf.summary.histogram('layer1_rb',layer1_rb)
+    tf.summary.histogram('recon_outputs',recon_outputs)
+    tf.summary.histogram('recon_outputt',recon_outputt)
+    
+    
+    ans = tf.reduce_mean(tf.pow(recon_outputs-x_source,2))
+    print(ans.shape)
+    loss1 = tf.reduce_mean(tf.reduce_sum(tf.pow(recon_outputs-x_source,2)))+tf.reduce_mean(tf.reduce_sum(tf.pow(recon_outputt-x_target,2)))- np.sum(vs==1)*lamdas/source.shape[0]
+    
+    tf.summary.scalar('loss1_.reconstruction_error',loss1)   
+
+    classify_W = tf.Variable(xavier_init([hidden2,1]))
+    outputs = tf.nn.softmax(tf.matmul(layer2_zs,classify_W))
+    outputt = tf.nn.softmax(tf.matmul(layer2_zt,classify_W))
+    
+    tf.summary.histogram('classify_W',classify_W)
+    tf.summary.histogram('outputs',outputs)
+    tf.summary.histogram('outputt',outputt)
+    
+    loss2 = tf.reduce_mean(tf.reduce_sum(tf.pow(y_source-outputs,2)))+tf.reduce_mean(tf.reduce_sum(tf.pow(y_target-outputt,2)))
+    
+    tf.summary.scalar('loss2',loss2)
+    
+    train_op1 = tf.train.MomentumOptimizer(learning_rate).minimize(loss1)
+    train_op2 = tf.train.MomentumOptimizer(learning_rate).minimize(loss2)
+    
+    loss3 = tf.pow(recon_outputs-source,2)+tf.pow(y_source-outputs,2)
+    
+#    tf.summary.scalar('loss3',np.sum(loss3)).
+    
+    
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+    merged = tf.summary.merge_all()
+    train_writer = tf.summary.FileWriter('/home/zhouying/log',sess.graph)
+#    merged_loss1 = tf.merge_summary(loss1)
+#    step = 20
+    for i in range(T):
+        a = np.zeros([np.sum(vs==1),input_dim])
+        b = np.zeros([1,np.sum(vs==1)])        
+        k = 0
+        for j in range(source.shape[0]):
+            if vs[j]==1:
+                a[k,:] = source[j,:]
+                b[0,k] = y_s[0,j]
+                k = k+1
+        for step in range(epoch):
+            if a.shape[0]==0:
+                source_batch = [np.zeros([0,input_dim]),np.zeros([1,0])]
+            else:
+                source_mnist = Dataset(a,b)
+                source_batch = source_mnist.next_batch(batch_size)
+            
+            
+            target_mnist = Dataset(target,y_t)            
+            target_batch = target_mnist.next_batch(batch_size)
+            
+            
+            _,summary = sess.run([train_op1,merged],feed_dict={x_source:source_batch[0],y_source:source_batch[1],x_target:target_batch[0],y_target:target_batch[1]})
+            train_writer.add_summary(summary,'%05d'%(epoch*i+step))
+            _,summary = sess.run([train_op2,merged],feed_dict={x_source:source_batch[0],y_source:source_batch[1],x_target:target_batch[0],y_target:target_batch[1]})
+            train_writer.add_summary(summary,'%05d'%(epoch*i+step))
+#        train_writer.add_run_metadata(loss_1,'step%03d'%i)
+        
+        
+        
+#        train_writer.add_run_metadata(loss_2,'step%03d'%i)
+        print(vs)
+        for j in range(vs.shape[0]):
+            c = np.zeros([1,input_dim])
+            c[0,:] = source[j,:]
+            d = np.zeros([1,1])
+            d[0,0] = y_s[0,j]
+            loss = sess.run(loss3,feed_dict={x_source:c,y_source:d})
+#            print(np.sum(loss))
+            if np.sum(loss) < lamdas:
+                vs[j] = 1 
+            else:
+                vs[j] = 0
+
+    train_writer.close()
+    sess.close()
+    
+    return vs
+
+import numpy as np
+import scipy.io
+
+mydata = scipy.io.loadmat('/home/zhouying/mytensorflow/MNIST_data/UCI/ionosphere.mat')
+data = np.array(mydata['data'])
+label = np.transpose(mydata['label'])
+ans = SLA(data,label,data,label,1000,10)
+
+
+
