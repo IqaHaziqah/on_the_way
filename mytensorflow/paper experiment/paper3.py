@@ -53,7 +53,7 @@ neg = 0
 
 i = 0
 #K折交叉验证 每次跑K回
-while (i<0):
+while (i<10):
     para_c = {'classifier':'GaussianNB','over_sampling':'SMOTE','kfold':10}
     cross_validation(data,label,para_c,para_o)
     i = i+1
@@ -67,7 +67,7 @@ while (i<0):
     i = i+1    
 #random_walk = False
 i = 0
-while (i<1):
+while (i<10):
     para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':10}
     para_o['ran_walk']=False
     cross_validation(data,label,para_c,para_o)
