@@ -13,7 +13,7 @@ from sklearn import preprocessing
 #import vae
 #from SDAE import mysdae
 import scipy.io
-from myutil2 import Smote,app,compute,write,random_walk,cross_validation
+from myutil2 import Smote,app,compute,write,random_walk,cross_validation,grid_search
 from vae4 import mnist_vae
 
 #ionosphere yeast glass
@@ -53,7 +53,7 @@ neg = 0
 
 i = 0
 #K折交叉验证 每次跑K回
-while (i<10):
+while (i<0):
     para_c = {'classifier':'GaussianNB','over_sampling':'SMOTE','kfold':10}
     cross_validation(data,label,para_c,para_o)
     i = i+1
@@ -67,12 +67,14 @@ while (i<0):
     i = i+1    
 #random_walk = False
 i = 0
-while (i<10):
+while (i<0):
     para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':10}
-    para_o['ran_walk']=False
+    para_o['ran_walk']=True
     cross_validation(data,label,para_c,para_o)
     i = i+1
-        
+
+para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':2}    
+grid_search(data,label,para_c,para_o)
 #use the reconstruction model and generated samples
     
 #    print('##########################zhouying###################################')

@@ -201,7 +201,7 @@ def write(path,para,dc):
     j = 0
     for index,value in para.items():
         table.write(row,j+1,index)
-        table.write(row,j+2,value)
+        table.write(row,j+2,str(value))
         j +=2    
     row +=1    
     for key in dc.keys():
@@ -267,4 +267,81 @@ def cross_validation(data,label,para_c,para_o):
         write(path,dict(para_c,**para_o),{'F1':gF1,'AUC':gauc,'gmean':ggmean})
     else:
         write(path,para_c,{'F1':gF1,'AUC':gauc,'gmean':ggmean})
+    return    
+
+def grid_search(data,label,para_c,para_o):
+    kfold = para_c['kfold']
+    neg = 0
+    pos = 1
+    gF1 = []
+    ggmean = []
+    gauc = []
+    path = 'collection.xls'
+    mF1 = 0
+    maxF1 = {}
+    mgmean = 0
+    maxgmean = {}
+    mauc = 0
+    maxauc = {}
+    from vae4 import mnist_vae
+    from sklearn.model_selection import StratifiedKFold
+    from sklearn.preprocessing import MinMaxScaler
+    for hidden_encoder_dim in np.arange(1,data.shape[1],5):
+        para_o['hidden_encoder_dim'] = hidden_encoder_dim
+        for hidden_decoder_dim in np.arange(1,data.shape[1],5):
+            para_o['hidden_decoder_dim'] = hidden_decoder_dim
+            for epochs in np.arange(20,50,10):
+                para_o['epochs'] = epochs
+                for batch_size in np.arange(1,20,3):
+                    para_o['batch_size'] = batch_size
+                    for learning_rate in np.linspace(0.001,0.1,10):
+                        para_o['learning_rate'] = learning_rate
+                        for lam in np.linspace(0,0.25*learning_rate,4):
+                            para_o['lam'] = lam
+                            skf = StratifiedKFold(n_splits = kfold)
+                            for train_index,test_index in skf.split(data,label):
+                                train = data[train_index]
+                                test = data[test_index]
+                                min_max_scaler = MinMaxScaler()
+                                min_max_scaler.fit_transform(train)
+                                min_max_scaler.transform(test)
+                                train_label = label[train_index]
+                                test_label = label[test_index]
+                                negative = train[train_label==neg]
+                                positive = train[train_label==pos]
+                                from sklearn.naive_bayes import GaussianNB
+                                gnb = GaussianNB()
+                                gene_size = negative.shape[0]-positive.shape[0]
+                                gene = mnist_vae(positive,gene_size,para_o)
+        
+                                train,train_label = app(positive,negative,gene)
+#        print(train.shape)
+                                y_predne = gnb.fit(train,train_label).predict(test)
+                                temf,temg,tema = compute(test_label,y_predne)
+                                gF1.append(temf)
+                                ggmean.append(temg)
+                                gauc.append(tema)
+                            if mF1<np.mean(gF1):
+                                mF1 = gF1
+                                maxF1 = para_o.copy()
+                            if mgmean<np.mean(ggmean):
+                                mgmean = ggmean
+                                maxgmean = para_o.copy()
+                            if mauc<np.mean(gauc):
+                                mauc = gauc
+                                maxauc = para_o.copy()
+                            gF1 = []
+                            ggmean = []
+                            gauc = []
+                            print('##########################zhouying###################################')
+    print('##########################zhouying###################################')
+#    print(dict(para_c,**maxF1))
+#    print({'max F1':mF1})
+#    print(dict(para_c,**maxgmean))
+#    print({'max gmean':mgmean})
+#    print(dict(para_c,**maxauc))
+#    print({'max auc':mauc})
+    write(path,dict(para_c,**maxF1),{'max F1':mF1})
+    write(path,dict(para_c,**maxgmean),{'max gmean':mgmean})
+    write(path,dict(para_c,**maxauc),{'max auc':mauc})
     return    
