@@ -68,15 +68,15 @@ model3.fit(np.array(questions).reshape(len(questions),1),np.array(answers).resha
 ##    testid = [row['id'] for row in reader]
 #    testdate = [row['date']for row in reader]
 #f.close()
-testdate=[d.weekday() for d in testdate]
+testdate= [datetime.strptime(d, '%Y-%m-%d').date() for d in testdate]
 testques = []
 testans = []
 for i in range(len(testid)):
     if testdate[i].weekday() not in [5,6]:
-        q = model1.predict(np.array(int(testid[i])).reshape(-1,1)[0])
-        testques.append(q)
+        q = model1.predict(np.array(int(testid[i])).reshape(-1,1))
+        testques.append(q[0][0])
     else:
-        q = model2.predict(np.array(int(testid[i])).reshape(-1,1)[0])
-        testques.append(q)
-    a = model3.predict(np.array(q).reshape(-1,1)[0])
-    testans.append(a)
+        q = model2.predict(np.array(int(testid[i])).reshape(-1,1))
+        testques.append(q[0][0])
+    a = model3.predict(np.array(q).reshape(-1,1))
+    testans.append(a[0][0])
