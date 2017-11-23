@@ -9,8 +9,7 @@ Created on Fri Jul  7 11:45:40 2017
 import tensorflow as tf
 import numpy as np
 
-def xavier_init(arg,constant = 1):
-    fan_in, fan_out = arg
+def xavier_init(fan_in, fan_out,constant = 1):
     low = -constant * np.sqrt(6.0 / (fan_in + fan_out))
     high = constant * np.sqrt(6.0 / (fan_in + fan_out))
     return tf.random_uniform((fan_in, fan_out),
@@ -224,39 +223,31 @@ def cross_validation(data,label,para_c,para_o):
     path = 'collection.xls'
     from vae4 import mnist_vae
     from sklearn.model_selection import StratifiedKFold
-    from sklearn.preprocessing import MinMaxScaler
     skf = StratifiedKFold(n_splits = kfold)
     for train_index,test_index in skf.split(data,label):
         train = data[train_index]
         test = data[test_index]
-        min_max_scaler = MinMaxScaler()
-        min_max_scaler.fit_transform(train)
-        min_max_scaler.transform(test)
+        train,test = standard_scale(train,test)
         train_label = label[train_index]
         test_label = label[test_index]
         negative = train[train_label==neg]
         positive = train[train_label==pos]
         from sklearn.naive_bayes import GaussianNB
         gnb = GaussianNB()
+#        from sklearn.ensemble import RandomForestClassifier
+#        gnb = RandomForestClassifier()
         if para_c['over_sampling'] =='SMOTE':
             s = Smote(positive,N=100)
             gene = s.over_sampling()
-#            print('1')
         elif para_c['over_sampling'] == 'vae':
-            gene_size = negative.shape[0]-positive.shape[0]
+            gene_size = positive.shape[0]
             gene = mnist_vae(positive,gene_size,para_o)
-#            print('2')
         elif para_c['over_sampling'] == 'random_walk':
             gene_size = positive.shape[0]
             gene = random_walk(positive,gene_size)
-#            print('3')
-#            print(gene)
         else:
             gene=[]
-#            print('4')
-#            print('else gene')
         train,train_label = app(positive,negative,gene)
-#        print(train.shape)
         y_predne = gnb.fit(train,train_label).predict(test)
         temf,temg,tema = compute(test_label,y_predne)
         gF1.append(temf)
@@ -344,4 +335,11 @@ def grid_search(data,label,para_c,para_o):
     write(path,dict(para_c,**maxF1),{'max F1':mF1})
     write(path,dict(para_c,**maxgmean),{'max gmean':mgmean})
     write(path,dict(para_c,**maxauc),{'max auc':mauc})
-    return    
+    return   
+
+def standard_scale(x_train,x_test):
+    import sklearn.preprocessing as prep
+    preprocessor = prep.StandardScaler().fit(x_train)
+    x_train = preprocessor.transform(x_train)
+    x_test = preprocessor.transform(x_test)
+    return x_train,x_test

@@ -18,7 +18,7 @@ from vae4 import mnist_vae
 
 #ionosphere yeast glass
 #data=np.loadtxt('./MNIST_data/ionosphere.txt',dtype='float32')
-mydata = scipy.io.loadmat('F:\\OneDrive\\mytensorflow\\MNIST_data\\UCI\\ionosphere.mat')
+mydata = scipy.io.loadmat('F:\\OneDrive\\mytensorflow\\MNIST_data\\UCI\\wpbc.mat')
 data = np.array(mydata['data'])
 label = np.transpose(mydata['label'])
 #label = np.array(mydata['label'])
@@ -40,9 +40,10 @@ para_o = {'hidden_encoder_dim':20,
     'latent_dim':5,
     'lam':0.0001,
     'epochs':25,
-    'batch_size':10,
+    'batch_size':2,
     'learning_rate':0.001,
-    'ran_walk':True    
+    'ran_walk':True,
+    'trade_off':0.5   
         }
 
 kfold = 10
@@ -67,14 +68,14 @@ while (i<0):
     i = i+1    
 #random_walk = False
 i = 0
-while (i<0):
+while (i<1):
     para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':10}
-    para_o['ran_walk']=True
+    para_o['ran_walk']=False
     cross_validation(data,label,para_c,para_o)
     i = i+1
 
-para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':2}    
-grid_search(data,label,para_c,para_o)
+#para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':2}    
+#grid_search(data,label,para_c,para_o)
 #use the reconstruction model and generated samples
     
 #    print('##########################zhouying###################################')
