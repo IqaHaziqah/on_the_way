@@ -18,7 +18,7 @@ from vae4 import mnist_vae
 
 #ionosphere yeast glass
 #data=np.loadtxt('./MNIST_data/ionosphere.txt',dtype='float32')
-mydata = scipy.io.loadmat('F:\\OneDrive\\mytensorflow\\MNIST_data\\UCI\\wpbc.mat')
+mydata = scipy.io.loadmat('F:\\OneDrive\\mytensorflow\\MNIST_data\\UCI\\ionosphere.mat')
 data = np.array(mydata['data'])
 label = np.transpose(mydata['label'])
 #label = np.array(mydata['label'])
@@ -55,7 +55,7 @@ neg = 0
 i = 0
 #K折交叉验证 每次跑K回
 while (i<0):
-    para_c = {'classifier':'GaussianNB','over_sampling':'SMOTE','kfold':10}
+    para_c = {'classifier':'GaussianNB','over_sampling':'None','kfold':10}
     cross_validation(data,label,para_c,para_o)
     i = i+1
 
@@ -69,7 +69,7 @@ while (i<0):
 #random_walk = False
 i = 0
 while (i<1):
-    para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':10}
+    para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':5}
     para_o['ran_walk']=False
     cross_validation(data,label,para_c,para_o)
     i = i+1

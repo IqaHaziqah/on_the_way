@@ -45,16 +45,16 @@ with tf.name_scope('train'):
 init =tf.global_variables_initializer()
 sess = tf.Session()
 merged = tf.summary.merge_all()
-writer = tf.summary.FileWriter('/home/zhouying/log',sess.graph)
+writer = tf.summary.FileWriter('.\\events\\',sess.graph)
 sess.run(init)
 
 x_data = np.linspace(-1,1,300,dtype=np.float32)[:,np.newaxis]
 noise = np.random.normal(0,0.05,x_data.shape)
 y_data = np.square(x_data)-0.5+noise
 
-for step in range(1000):
+for step in range(10):
 	sess.run(train_step,feed_dict={x:x_data,y:y_data})
-	if step %50==0:
+	if step %5==0:
 		result = sess.run(merged,feed_dict={x:x_data,y:y_data})
 		writer.add_summary(result)
 writer.close()

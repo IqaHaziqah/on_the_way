@@ -104,9 +104,9 @@ def mnist_vae(data,gene_size,feed_dict):
         for i in range(epochs):
             for j in range(total):
                 _, cur_loss,cur_kld = sess.run([train_step,loss,kld], feed_dict={x: mnist.next_batch(batch_size)[0]})
-#                if j % 5 == 0:
-#                    print("Step {0} | Loss: {1}".format((i*total+j), cur_loss))
-#                    print("Step {0} | kld: {1}".format((i*total+j), cur_kld))
+                if j % 5 == 0:
+                    print("Step {0} | Loss: {1}".format((i*total+j), cur_loss))
+                    print("Step {0} | kld: {1}".format((i*total+j), cur_kld))
         if ran_walk == True:
             zz = sess.run([z],feed_dict={x:data})
 #        print(zz.shape)

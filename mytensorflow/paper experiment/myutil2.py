@@ -155,7 +155,8 @@ def random_walk(z,gene_size):
     return np.array(z_sample)
 
 def app(positive,negative,gene=[]):
-    positive = np.row_stack([positive,gene])
+    if gene!=[]:
+        positive = np.row_stack([positive,gene])
     a = np.ones(positive.shape[0])
     b = np.zeros(negative.shape[0])        
     return np.row_stack((positive,negative)),np.append(a,b)
@@ -254,10 +255,11 @@ def cross_validation(data,label,para_c,para_o):
         ggmean.append(temg)
         gauc.append(tema)
     print('##########################zhouying###################################')
-    if para_c['over_sampling'] == 'vae':
-        write(path,dict(para_c,**para_o),{'F1':gF1,'AUC':gauc,'gmean':ggmean})
-    else:
-        write(path,para_c,{'F1':gF1,'AUC':gauc,'gmean':ggmean})
+#    if para_c['over_sampling'] == 'vae':
+#        write(path,dict(para_c,**para_o),{'F1':gF1,'AUC':gauc,'gmean':ggmean})
+#    else:
+#        write(path,para_c,{'F1':gF1,'AUC':gauc,'gmean':ggmean})
+    print('mean F1:',np.mean(gF1),'mean AUC:',np.mean(gauc),'mean gmean:',np.mean(ggmean))
     return    
 
 def grid_search(data,label,para_c,para_o):
@@ -343,3 +345,21 @@ def standard_scale(x_train,x_test):
     x_train = preprocessor.transform(x_train)
     x_test = preprocessor.transform(x_test)
     return x_train,x_test
+
+def show():
+    import numpy as np
+    from matplotlib import pyplot as plt
+    import scipy.io
+
+    mydata = scipy.io.loadmat('F:\\OneDrive\\mytensorflow\\MNIST_data\\UCI\\wpbc.mat')
+    data = np.array(mydata['data'])
+
+    for i in range(data.shape[1]):
+        plt.figure(i)
+        ax1 = plt.subplot(211)
+        ax2 = plt.subplot(212)
+        plt.sca(ax1)
+        for index,value in enumerate(data[i,:]):
+            plt.scatter(index,value)
+        plt.show()
+    return
