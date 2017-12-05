@@ -363,3 +363,24 @@ def show():
             plt.scatter(index,value)
         plt.show()
     return
+
+def show2():
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    x = np.linspace(-1,1,100)
+    y1 = x**2
+    y2 = x
+    
+    plt.figure(1)
+    plt.plot(x,y1,color='red',linestyle='--',label='square')
+    plt.plot(x,y2,linestyle='-.',label='linear')
+    plt.xlim((-2,2))#xy轴的长度
+    plt.ylim((-2,2))
+    plt.xlabel('x')
+    plt.ylabel('$this\ is\ y$')
+    plt.xticks(np.linspace(-2,2,5))
+    plt.yticks(np.linspace(-2,2,5))
+    plt.legend()
+    plt.show()
+    return

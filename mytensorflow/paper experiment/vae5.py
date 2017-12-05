@@ -90,16 +90,16 @@ def mnist_vae(data,gene_size,feed_dict):
         l2_loss += tf.nn.l2_loss(W_decoder_hidden_reconstruction)
     
     x_hat = (tf.matmul(hidden_decoder, W_decoder_hidden_reconstruction) + b_decoder_hidden_reconstruction)
-    with tf.name_scope('loss'):
-        KLD = -0.5 * tf.reduce_sum(1 + logvar_encoder - tf.pow(mu_encoder, 2) - tf.exp(logvar_encoder), reduction_indices=1)
+#    with tf.name_scope('loss'):
+    KLD = -0.5 * tf.reduce_sum(1 + logvar_encoder - tf.pow(mu_encoder, 2) - tf.exp(logvar_encoder), reduction_indices=1)
 #    KLD = 0
-        kld = tf.reduce_mean(KLD)
-    #    BCE = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=x_hat, labels=x), reduction_indices=1)
-    #    BCE = tf.reduce_sum(tf.abs(x_hat-x))
-        BCE = tf.reduce_sum(tf.pow(x_hat-x,2))
-        loss = tf.reduce_mean(trade_off*BCE + KLD)
-    
-        regularized_loss = loss + lam * l2_loss
+    kld = tf.reduce_mean(KLD)
+#    BCE = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=x_hat, labels=x), reduction_indices=1)
+#    BCE = tf.reduce_sum(tf.abs(x_hat-x))
+    BCE = tf.reduce_sum(tf.pow(x_hat-x,2))
+    loss = tf.reduce_mean(trade_off*BCE + KLD)
+
+    regularized_loss = loss + lam * l2_loss
     
 #    loss_summ = tf.summary.scalar("lowerbound", loss)
     train_step = tf.train.AdamOptimizer(learning_rate).minimize(regularized_loss)
@@ -108,7 +108,7 @@ def mnist_vae(data,gene_size,feed_dict):
     x_hat_1 = (tf.matmul(hidden_decoder_1, W_decoder_hidden_reconstruction) + b_decoder_hidden_reconstruction)
     
     tf.summary.scalar('kld',kld)
-    tf.summary.scalar('lowerbound',loss)
+    tf.summary.scalar('lowerbound',regularized_loss)
     merged = tf.summary.merge_all()
 #writer应该在sess定义之后        
     with tf.Session() as sess:
@@ -117,9 +117,10 @@ def mnist_vae(data,gene_size,feed_dict):
         writer = tf.summary.FileWriter('.\\events\\',sess.graph)
         for i in range(total):
             batch = mnist.next_batch(batch_size)[0]
-            sess.run([train_step], feed_dict={x:batch})
-            result = sess.run([merged], feed_dict={x:batch})
-            writer.add_summary(result)
+#            print(batch.shape)
+            result,_=sess.run([merged,train_step], feed_dict={x:batch})
+#            result = sess.run(merged, feed_dict={x:batch})
+            writer.add_summary(result,i)
 #                _, cur_loss,cur_kld = sess.run([train_step,loss,kld], feed_dict={x: mnist.next_batch(batch_size)[0]}
                 
                 

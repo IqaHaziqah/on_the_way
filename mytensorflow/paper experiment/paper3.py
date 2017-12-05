@@ -9,12 +9,12 @@ Created on Fri Jul  7 09:51:18 2017
 
 import numpy as np
 #import matplotlib.pyplot as plt
-from sklearn import preprocessing
+#from sklearn import preprocessing
 #import vae
 #from SDAE import mysdae
 import scipy.io
 from myutil2 import Smote,app,compute,write,random_walk,cross_validation,grid_search
-from vae4 import mnist_vae
+#from vae4 import mnist_vae
 
 #ionosphere yeast glass
 #data=np.loadtxt('./MNIST_data/ionosphere.txt',dtype='float32')
@@ -69,7 +69,7 @@ while (i<0):
 #random_walk = False
 i = 0
 while (i<1):
-    para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':5}
+    para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':2}
     para_o['ran_walk']=False
     cross_validation(data,label,para_c,para_o)
     i = i+1
