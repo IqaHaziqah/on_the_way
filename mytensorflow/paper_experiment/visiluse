@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct 10 10:44:16 2017
+
+@author: zhouying
+"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+plt.style.use('ggplot')
+plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.sans-serif'] = ['SimHei']
+
+
+df = pd.DataFrame()
+for i in range(x_train_orginal.shape[1]):
+    df[str(i)] = x_train_orginal[:,i]
+df.boxplot()
+plt.title('x_train_orginal sample')
+plt.show()
+
+df2 = pd.DataFrame()
+for i in range(gene.shape[1]):
+    df2[str(i)] = gene[:,i]
+#plt.boxplot(x=df2.values,labels=df2.columns,whis=2.5)
+#plt.show()
+df2.boxplot()
+plt.title('generation sample')
+plt.show()
+
+df3 = pd.DataFrame()
+for i in range(x_train_positive.shape[1]):
+    df3[str(i)] = x_train_positive[:,i]
+df3.boxplot()
+plt.title('x_train_positive sample')
+plt.show()
+

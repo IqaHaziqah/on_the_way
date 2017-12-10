@@ -23,7 +23,7 @@ FLAGS = None
 
 def train():
   # Import data
-  mnist = input_data.read_data_sets(FLAGS.data_dir,
+  mnist = input_data.read_data_sets('F:/OneDrive/mytensorflow/MNIST_data',
                                     one_hot=True,
                                     fake_data=FLAGS.fake_data)
 
@@ -146,7 +146,7 @@ def train():
     if i % 10 == 0:  # Record summaries and test-set accuracy
       summary, acc = sess.run([merged, accuracy], feed_dict=feed_dict(False))
       test_writer.add_summary(summary, i)
-      print('Accuracy at step %s: %s' % (i, acc))
+      print(i, acc)
     else:  # Record train set summaries, and train
       if i % 100 == 99:  # Record execution stats
         run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
@@ -157,7 +157,7 @@ def train():
                               run_metadata=run_metadata)
         train_writer.add_run_metadata(run_metadata, 'step%03d' % i)
         train_writer.add_summary(summary, i)
-        print('Adding run metadata for', i)
+        print(i)
       else:  # Record a summary
         summary, _ = sess.run([merged, train_step], feed_dict=feed_dict(True))
         train_writer.add_summary(summary, i)
