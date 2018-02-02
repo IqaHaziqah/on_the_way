@@ -1,7 +1,7 @@
 
 from tensorflow.examples.tutorials.mnist import input_data
-path = 'F:\\OneDrive\\mytensorflow\\MNIST_data'
-
+path1 = 'F:\\OneDrive\\mytensorflow\\MNIST_data'
+path2 = '~/home/zhouying/mytensorflow/MNIST_data'
 mnist = input_data.read_data_sets(path,one_hot=True)
 
 import tensorflow as tf

@@ -7,7 +7,7 @@ def myvae(x_train,y_train,n_samples):
     from keras.models import Model
     from keras import backend as K
     from keras import metrics
-    from myutil import Dataset,Smote
+    from myutil2 import Dataset,Smote
 #from keras.datasets import mnist
     x_train_generator = []
 #    data=np.loadtxt('./MNIST_data/yeast.txt',dtype='float32')

@@ -1,0 +1,2 @@
+model_checkpoint_path: "F:\\OneDrive\\mytensorflow\\paper_experiment\\diabetes\\event4\\model.ckpt-1"
+all_model_checkpoint_paths: "F:\\OneDrive\\mytensorflow\\paper_experiment\\diabetes\\event4\\model.ckpt-1"

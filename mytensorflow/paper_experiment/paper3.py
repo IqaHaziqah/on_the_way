@@ -7,7 +7,8 @@ Created on Fri Jul  7 09:51:18 2017
 """
 #from __future__ import division, print_function, absolute_import
 
-import numpy as np
+import numpy as np,time
+start = time.clock()
 #import matplotlib.pyplot as plt
 #from sklearn import preprocessing
 #import vae
@@ -18,14 +19,15 @@ from myutil2 import Smote,app,compute,write,random_walk,cross_validation,grid_se
 
 #ionosphere yeast glass
 #data=np.loadtxt('./MNIST_data/ionosphere.txt',dtype='float32')
-mydata = scipy.io.loadmat('F:\\OneDrive\\mytensorflow\\MNIST_data\\UCI\\ionosphere.mat')
+mydata = scipy.io.loadmat('..\\MNIST_data\\UCI\\ionosphere.mat')
 data = np.array(mydata['data'])
 label = np.transpose(mydata['label'])
 #label = np.array(mydata['label'])
 label = label[0]
 # Parameters for reconstruction model
-para_r = {'learning_rate':0.001,
-        'training_epochs':30,
+para_r = {
+        'learning_rate':0.001,
+        'training_epochs':20,
         'batch_size':20,
         'keep_rate':0.75,
         'n_input':data.shape[1],
@@ -35,14 +37,16 @@ para_r = {'learning_rate':0.001,
         'the':1.1
         }
 # parameters for the oversampling process
-para_o = {'hidden_encoder_dim':20, 
-    'hidden_decoder_dim':20, 
-    'latent_dim':5,
-    'lam':0.0001,
-    'epochs':25,
-    'batch_size':2,
-    'learning_rate':0.001,
-    'ran_walk':True,
+para_o = {
+    'hidden_encoder_dim':30,                                    
+    'hidden_decoder_dim':30, 
+    'latent_dim':10,
+    'lam':0,
+    'epochs':800,
+    'batch_size':30,
+    'learning_rate':1e-5,
+    'ran_walk':False,
+    'check':True,
     'trade_off':0.5   
         }
 
@@ -68,12 +72,20 @@ while (i<0):
     i = i+1    
 #random_walk = False
 i = 0
-while (i<1):
-    para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':2}
+while (i<0):
+    para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':kfold}
     para_o['ran_walk']=False
     cross_validation(data,label,para_c,para_o)
     i = i+1
 
+from vae6 import mnist_vae
+#epochs = [10,20,30,40,50,60,70,80]
+epochs = [35]
+for value in epochs:
+    para_o['epochs']=value
+    ans = mnist_vae(data,300,para_o)
+    print('trainingepoch:',value)
+    print('time used:',(time.clock()-start))
 #para_c = {'classifier':'GaussianNB','over_sampling':'vae','kfold':2}    
 #grid_search(data,label,para_c,para_o)
 #use the reconstruction model and generated samples
@@ -84,5 +96,7 @@ while (i<1):
 #      {'F1':F1,'AUC':auc,'gmean':gmean})
     
     
+    
+
 
 

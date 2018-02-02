@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Aug 15 09:38:51 2017
+
+@author: zhouying
+"""
+"""Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+def variable_summaries(var,var_name):
+    import tensorflow as tf
+    with tf.name_scope(var_name):
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar('mean', mean)
+        with tf.name_scope('stddev'):
+          stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.summary.scalar('stddev', stddev)
+        tf.summary.scalar('max', tf.reduce_max(var))
+        tf.summary.scalar('min', tf.reduce_min(var))
+        tf.summary.histogram('histogram', var)
+
+def wanna_see(data,generate,label=[]):
+    import tensorflow as tf
+    import os
+    from tensorflow.contrib.tensorboard.plugins import projector
+    import numpy as np
+    logdir = os.path.join(os.path.abspath('.'),'event')
+    see = np.concatenate([data,generate],axis=0)
+    embedding_var = tf.Variable(see,name='wanna_see')
+    summary_writer = tf.summary.FileWriter(logdir)
+    config = projector.ProjectorConfig()
+    embedding = config.embeddings.add()
+    embedding.tensor_name = embedding_var.name
+    if label==[]:
+        labels=np.concatenate([np.zeros(data.shape[0]),np.ones(generate.shape[0])],axis=0)
+    else:
+        next = np.argmax(label)+1
+        labels = np.concatenate([label,np.ones(generate.shape[0])*next],axis=0)
+    path_for_metadata = os.path.join(logdir,'metadata.tsv')
+    embedding.metadata_path = path_for_metadata
+    projector.visualize_embeddings(summary_writer,config)
+    sess = tf.InteractiveSession()
+    sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver()
+    saver.save(sess, os.path.join(logdir, "model.ckpt"), 1)
+    with open(path_for_metadata,'w') as f:
+        f.write('Index\tLabel\n')
+        for index,value in enumerate(labels):
+            f.write('%d\t%d\n'%(index,value))
+
+
+import tensorflow as tf
+from myutil2 import Dataset
+import numpy as np
+from scipy.stats import norm
+from myutil2 import random_walk,xavier_init
+from keras import metrics
+from tensorflow.examples.tutorials.mnist import input_data
+
+
+#    mnist = Dataset(data)
+mnist = input_data.read_data_sets('..\MNIST_data')
+#    input_dim = data.shape[1]
+input_dim = 784
+hidden_encoder_dim = 400
+hidden_decoder_dim = 400
+latent_dim = 20
+lam = 0
+epochs = int(1e5)
+batch_size = 100
+learning_rate = 1e-2
+check = True
+ran_walk = False
+
+tf.set_random_seed(1)
+
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.001)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+with tf.name_scope('inputs'):
+    x = tf.placeholder("float", shape=[None, input_dim],name='input_x')
+    input_z = tf.placeholder("float",shape = [None,latent_dim],name='input_z')
+    
+l2_loss = tf.constant(0.0)
+
+with tf.name_scope('encode_hidden'):
+    W_encoder_input_hidden = weight_variable([input_dim,hidden_encoder_dim])
+#    W_encoder_input_hidden = xavier_init(input_dim,hidden_encoder_dim)
+    b_encoder_input_hidden = bias_variable([hidden_encoder_dim])
+    
+    if check == True:
+        variable_summaries(W_encoder_input_hidden, 'W_encoder_input_hidden')
+
+
+# Hidden layer encoder
+    hidden_encoder = tf.nn.relu(tf.matmul(x, W_encoder_input_hidden) + b_encoder_input_hidden)
+l2_loss += tf.nn.l2_loss(W_encoder_input_hidden)
+with tf.name_scope('encode_mu'):
+    W_encoder_hidden_mu = weight_variable([hidden_encoder_dim,latent_dim])
+#    W_encoder_hidden_mu = xavier_init(hidden_encoder_dim,latent_dim)
+    b_encoder_hidden_mu = bias_variable([latent_dim])
+    
+    if check == True:
+        variable_summaries(W_encoder_hidden_mu, 'W_encoder_hidden_mu')
+        variable_summaries(b_encoder_hidden_mu, 'b_encoder_hidden_mu')
+        
+    # Mu encoder
+    mu_encoder = tf.matmul(hidden_encoder, W_encoder_hidden_mu) + b_encoder_hidden_mu
+l2_loss += tf.nn.l2_loss(W_encoder_hidden_mu)
+with tf.name_scope('encode_logvar'):
+    W_encoder_hidden_logvar = weight_variable([hidden_encoder_dim,latent_dim])
+#    W_encoder_hidden_logvar = xavier_init(hidden_encoder_dim,latent_dim)
+    b_encoder_hidden_logvar = bias_variable([latent_dim])
+    
+    if check == True:
+        variable_summaries(W_encoder_hidden_logvar, 'W_encoder_hidden_logvar')
+# Sigma encoder
+    logvar_encoder = tf.matmul(hidden_encoder, W_encoder_hidden_logvar) + b_encoder_hidden_logvar
+l2_loss += tf.nn.l2_loss(W_encoder_hidden_logvar)
+# Sample epsilon
+epsilon = tf.random_normal(tf.shape(logvar_encoder), name='epsilon')
+
+# Sample latent variable
+std_encoder = tf.exp(0.5 * logvar_encoder)
+z = mu_encoder + tf.multiply(std_encoder, epsilon)
+
+with tf.name_scope('deocde_z'):
+    W_decoder_z_hidden = weight_variable([latent_dim,hidden_decoder_dim])
+#    W_decoder_z_hidden = xavier_init(latent_dim,hidden_decoder_dim)
+    b_decoder_z_hidden = bias_variable([hidden_decoder_dim])
+    
+    if check == True:
+        variable_summaries(W_decoder_z_hidden, 'W_decoder_z_hidden')
+# Hidden layer decoder
+    hidden_decoder = tf.nn.relu(tf.matmul(z, W_decoder_z_hidden) + b_decoder_z_hidden)
+l2_loss += tf.nn.l2_loss(W_decoder_z_hidden)
+with tf.name_scope('decode_hidden'):
+    W_decoder_hidden_reconstruction = weight_variable([hidden_decoder_dim, input_dim])
+#    W_decoder_hidden_reconstruction = xavier_init(hidden_decoder_dim, input_dim)
+    b_decoder_hidden_reconstruction = bias_variable([input_dim])    
+    if check == True:
+        variable_summaries(W_decoder_hidden_reconstruction, 'W_decoder_hidden_reconstruction')
+#    KLD = -0.5 * tf.reduce_sum(1 + logvar_encoder - tf.pow(mu_encoder, 2) - tf.exp(logvar_encoder), reduction_indices=1)
+#    KLD = 0
+l2_loss += tf.nn.l2_loss(W_decoder_hidden_reconstruction)
+#    KLD = 0.5*tf.reduce_sum(tf.square(mu_encoder)+tf.square(logvar_encoder)-tf.log(tf.square(logvar_encoder))-1,1)
+KLD = -0.5*tf.reduce_sum(1+logvar_encoder-tf.square(mu_encoder)-tf.exp(logvar_encoder),axis=-1)
+kld = tf.reduce_mean(KLD)
+x_hat = (tf.matmul(hidden_decoder, W_decoder_hidden_reconstruction) + b_decoder_hidden_reconstruction)
+BCE = tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=x_hat, labels=x), reduction_indices=1)
+#    BCE = tf.reduce_sum(tf.abs(x_hat-x))
+#    BCE = tf.reduce_sum(tf.pow(x_hat-x,2),reduction_indices=1)
+#BCE = input_dim * metrics.binary_crossentropy(x, x_hat)
+loss = tf.reduce_mean(BCE + KLD)
+regularized_loss = loss + lam * l2_loss
+#    loss = tf.reduce_mean(BCE+KLD)
+if check == True:
+    tf.summary.scalar('unregularied_loss',loss)
+    tf.summary.scalar('lowerbound',kld)
+    tf.summary.scalar('binary_crossentropy',tf.reduce_mean(BCE))
+
+
+
+#    loss_summ = tf.summary.scalar("lowerbound", loss)
+train_step = tf.train.AdamOptimizer(learning_rate).minimize(regularized_loss)
+merged = tf.summary.merge_all()
+hidden_decoder_1 = tf.nn.relu(tf.matmul(input_z, W_decoder_z_hidden) + b_decoder_z_hidden)
+x_hat_1 = (tf.matmul(hidden_decoder_1, W_decoder_hidden_reconstruction) + b_decoder_hidden_reconstruction)
+
+logdir = '.\\event\\'
+#if tf.gfile.Exists(logdir):
+#    tf.gfile.DeleteRecursively(logdir)
+    
+
+with tf.Session() as sess:
+    
+    sess.run(tf.global_variables_initializer())
+    writer = tf.summary.FileWriter(logdir,sess.graph)
+#        projector.visualize_embeddings(writer,config)
+    for i in range(epochs):
+#            for j in range(total):
+#                _,train = sess.run([train_step,merged], feed_dict={x: mnist.next_batch(batch_size)[0]})
+        batch = mnist.train.next_batch(batch_size)[0]
+        batch = batch/255
+        sess.run(train_step,feed_dict={x:batch})
+        if i%50 == 0 and check == True:
+            result = sess.run(merged,feed_dict={x:batch})
+            writer.add_summary(result,i)
+            
+#                cur_loss = sess.run(loss,feed_dict={x:batch})
+#                print("Step {0} | Loss: {1}".format(i,cur_loss))
+#                writer.add_summary(train)
+#                if j % 5 == 0:
+#                    print("Step {0} | Loss: {1}".format((i*total+j), cur_loss))
+#                    print("Step {0} | kld: {1}".format((i*total+j), cur_kld))
+        if i == 25000:
+            learning_rate = 1e-4
+#        saver.save(sess,os.path.join(logdir,'model.ckpt'),1)
+    if check == False:
+        z_sample = sess.run(z,feed_dict={x:data})
+        
+    elif ran_walk == True:
+        zz = sess.run([z],feed_dict={x:data})#
+#        print(zz.shape)
+        z_sample = random_walk(zz,gene_size)
+    else:
+#            miu,sigma=sess.run([mu_encoder,std_encoder],feed_dict={x:data})
+#            miu = np.mean(miu,axis=0)
+#            sigma = np.mean(sigma,axis=0)
+#            ep = np.random.randn(gene_size,latent_dim)
+#            z_sample = miu+sigma*ep
+        gene_size = 100
+        z_sample = np.random.normal(size=[gene_size,latent_dim])
+    x_hat_1 = sess.run(x_hat_1,feed_dict = {input_z:z_sample})
+#    print('lower_bound,mean_loss',sess.run([kld,loss],feed_dict={x:data}))
+    writer.close()
+    sess.close()
+tf.reset_default_graph()
+

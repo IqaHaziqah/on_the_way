@@ -1,0 +1,24 @@
+diabetes
+C4.5
+
+NB
+结果
+mean F1-min: 0.667409166326 mean f-maj: 0.802272107912 mean accuracy: 0.752614490772
+mean gmean: 0.740898972308 mean TPrate: 0.712535612536 mean AUC: 0.820213675214
+参数
+{'activation': <function tensorflow.python.ops.gen_nn_ops.relu>,
+ 'batch_size': 50,
+ 'check': False,
+ 'decay': 0.9,
+ 'epochs': 1000,
+ 'hidden_decoder_dim': 10,
+ 'hidden_encoder_dim': 10,
+ 'initial': 4,
+ 'lam': 0,
+ 'latent_dim': 2,
+ 'learning_rate': 0.01,
+ 'norm': True,
+ 'optimizer': tensorflow.python.training.adam.AdamOptimizer,
+ 'ran_walk': False,
+ 'trade_off': 0.5}
+KNN

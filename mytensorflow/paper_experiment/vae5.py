@@ -114,6 +114,9 @@ def mnist_vae(data,gene_size,feed_dict):
     with tf.Session() as sess:
         total = int(data.shape[0]/batch_size)*epochs
         sess.run(tf.global_variables_initializer())
+#        if tf.gfile.Exists('./events'):
+#            tf.gfile.DeleteRecursively('./events')
+#        tf.gfile.MakeDirs('./events')
         writer = tf.summary.FileWriter('.\\events\\',sess.graph)
         for i in range(total):
             batch = mnist.next_batch(batch_size)[0]
