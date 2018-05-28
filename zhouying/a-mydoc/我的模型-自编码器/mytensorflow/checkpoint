@@ -1,3 +1,0 @@
-model_checkpoint_path: "model_positive.ckpt"
-all_model_checkpoint_paths: "model_negative.ckpt"
-all_model_checkpoint_paths: "model_positive.ckpt"
